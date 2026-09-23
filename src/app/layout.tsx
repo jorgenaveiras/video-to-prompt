@@ -1,13 +1,15 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || (process.env.NODE_ENV === "production" ? "/video-to-prompt" : "");
+
 export const metadata: Metadata = {
   title: "Video to Veo Prompt Generator",
   description: "Sube un video (3-30s) y genera un prompt optimizado para Google Veo",
   keywords: ["video", "prompt", "veo", "google", "ai", "generative", "video generation"],
   icons: {
-    icon: "/icon-192.png",
-    apple: "/icon-192.png",
+    icon: `${basePath}/icon-192.png`,
+    apple: `${basePath}/icon-192.png`,
   },
 };
 
