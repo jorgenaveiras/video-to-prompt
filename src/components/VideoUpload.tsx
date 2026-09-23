@@ -17,7 +17,7 @@ const MIN_RECORD_SECONDS = 3;
 export function VideoUpload({ onAnalyzeComplete }: VideoUploadProps) {
   const { state, analyze, cancel, reset } = useVideoAnalysis();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [mediaUrl, setMediaUrl] = useState<string | null>(null);
   const [showCamera, setShowCamera] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -40,21 +40,23 @@ export function VideoUpload({ onAnalyzeComplete }: VideoUploadProps) {
 
   useEffect(() => {
     return () => {
-      if (videoUrl) URL.revokeObjectURL(videoUrl);
+      if (mediaUrl) URL.revokeObjectURL(mediaUrl);
       streamRef.current?.getTracks().forEach((t) => t.stop());
       if (recordTimerRef.current) clearInterval(recordTimerRef.current);
       if (autoStopRef.current) clearTimeout(autoStopRef.current);
     };
-  }, [videoUrl]);
+  }, [mediaUrl]);
+
+  const isImage = !!selectedFile && selectedFile.type.startsWith("image/");
 
   const handleFileSelect = useCallback(
     (file: File) => {
       setSelectedFile(file);
-      if (videoUrl) URL.revokeObjectURL(videoUrl);
-      setVideoUrl(URL.createObjectURL(file));
+      if (mediaUrl) URL.revokeObjectURL(mediaUrl);
+      setMediaUrl(URL.createObjectURL(file));
       reset();
     },
-    [videoUrl, reset]
+    [mediaUrl, reset]
   );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -67,7 +69,7 @@ export function VideoUpload({ onAnalyzeComplete }: VideoUploadProps) {
       e.preventDefault();
       e.stopPropagation();
       const file = e.dataTransfer.files[0];
-      if (file && file.type.startsWith("video/")) {
+      if (file && (file.type.startsWith("video/") || file.type.startsWith("image/"))) {
         handleFileSelect(file);
       }
     },
@@ -177,7 +179,7 @@ export function VideoUpload({ onAnalyzeComplete }: VideoUploadProps) {
         <input
           ref={fileInputRef}
           type="file"
-          accept="video/*"
+          accept="video/*,image/*"
           className="hidden"
           onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
           disabled={state.status !== "idle" && state.status !== "error"}
@@ -246,7 +248,7 @@ export function VideoUpload({ onAnalyzeComplete }: VideoUploadProps) {
                     <svg className="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                     </svg>
-                    Seleccionar Video
+                    Seleccionar Video o Imagen
                   </button>
                   <button
                     onClick={handleCameraClick}
@@ -260,19 +262,30 @@ export function VideoUpload({ onAnalyzeComplete }: VideoUploadProps) {
                   </button>
                 </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  O arrastra y suelta tu video aqui (MP4, WebM, MOV, AVI, MKV - Max 100MB - 3-30s)
+                  O arrastra y suelta tu video (MP4, WebM, MOV, AVI, MKV - 3-30s) o imagen
+                  (JPG, PNG, WebP, GIF) aqui
                 </p>
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="relative aspect-video max-h-96 bg-black rounded-lg overflow-hidden">
-                  <video
-                    ref={videoRef}
-                    src={videoUrl || undefined}
-                    controls
-                    className="w-full h-full object-contain"
-                  />
-                </div>
+                {isImage ? (
+                  <div className="relative max-h-96 mx-auto bg-black rounded-lg overflow-hidden">
+                    <img
+                      src={mediaUrl || undefined}
+                      alt={selectedFile.name}
+                      className="max-h-96 mx-auto object-contain"
+                    />
+                  </div>
+                ) : (
+                  <div className="relative aspect-video max-h-96 bg-black rounded-lg overflow-hidden">
+                    <video
+                      ref={videoRef}
+                      src={mediaUrl || undefined}
+                      controls
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                )}
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600 dark:text-gray-400">
                     {selectedFile.name} - {formatFileSize(selectedFile.size)}
@@ -280,13 +293,13 @@ export function VideoUpload({ onAnalyzeComplete }: VideoUploadProps) {
                   <button
                     onClick={() => {
                       setSelectedFile(null);
-                      if (videoUrl) URL.revokeObjectURL(videoUrl);
-                      setVideoUrl(null);
+                      if (mediaUrl) URL.revokeObjectURL(mediaUrl);
+                      setMediaUrl(null);
                       reset();
                     }}
                     className="text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium"
                   >
-                    Cambiar video
+                    Cambiar archivo
                   </button>
                 </div>
               </div>
@@ -301,8 +314,8 @@ export function VideoUpload({ onAnalyzeComplete }: VideoUploadProps) {
           <div className="space-y-4 p-6 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">
               <span className="font-semibold text-gray-900 dark:text-white">
-                {state.status === "validating" && "Validando video..."}
-                {state.status === "extracting" && "Extrayendo frames..."}
+                {state.status === "validating" && "Validando archivo..."}
+                {state.status === "extracting" && "Procesando material..."}
                 {state.status === "analyzing" && "Analizando con IA..."}
                 {state.status === "building" && "Generando prompt..."}
               </span>
@@ -357,7 +370,7 @@ export function VideoUpload({ onAnalyzeComplete }: VideoUploadProps) {
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.734-.988-2.386l-.548-.547z" />
           </svg>
-          Analizar Video y Generar Prompt
+          {isImage ? "Analizar Imagen y Generar Prompt" : "Analizar Video y Generar Prompt"}
         </button>
       )}
     </div>

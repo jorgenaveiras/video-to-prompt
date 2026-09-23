@@ -39,6 +39,70 @@ export function validateVideoFile(file: File): { valid: boolean; error?: string 
   return { valid: true };
 }
 
+export function validateImageFile(file: File): { valid: boolean; error?: string } {
+  const validTypes = [
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/gif",
+  ];
+  const maxSize = 20 * 1024 * 1024;
+
+  if (!validTypes.includes(file.type)) {
+    return {
+      valid: false,
+      error: "Formato de imagen no soportado. Use JPG, PNG, WebP o GIF",
+    };
+  }
+
+  if (file.size > maxSize) {
+    return { valid: false, error: "Imagen demasiado grande. Maximo 20MB" };
+  }
+
+  return { valid: true };
+}
+
+export function validateMediaFile(file: File): { valid: boolean; error?: string; type: "video" | "image" } {
+  if (file.type.startsWith("video/")) {
+    const v = validateVideoFile(file);
+    return { ...v, type: "video" };
+  }
+  if (file.type.startsWith("image/")) {
+    const i = validateImageFile(file);
+    return { ...i, type: "image" };
+  }
+  return { valid: false, error: "Tipo de archivo no soportado", type: "video" };
+}
+
+export function readFileAsBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      const base64 = result.split(",")[1] || result;
+      resolve(base64);
+    };
+    reader.onerror = () => reject(new Error("No se pudo leer el archivo"));
+    reader.readAsDataURL(file);
+  });
+}
+
+export function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("No se pudo leer la imagen"));
+    };
+    img.src = url;
+  });
+}
+
 export function getVideoDuration(file: File): Promise<number> {
   return new Promise((resolve, reject) => {
     const video = document.createElement("video");

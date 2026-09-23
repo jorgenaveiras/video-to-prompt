@@ -210,12 +210,16 @@ export function PromptResult({ result, onNewAnalysis }: PromptResultProps) {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            Metadata del video original
+            Metadata del material original
           </summary>
           <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div>
               <span className="text-gray-500 dark:text-gray-400">Duracion:</span>{" "}
-              <span className="font-mono ml-2">{result.source_metadata.duration.toFixed(1)}s</span>
+              <span className="font-mono ml-2">
+                {result.source_metadata.duration > 0
+                  ? `${result.source_metadata.duration.toFixed(1)}s`
+                  : "Imagen"}
+              </span>
             </div>
             <div>
               <span className="text-gray-500 dark:text-gray-400">Resolucion:</span>{" "}
@@ -225,7 +229,11 @@ export function PromptResult({ result, onNewAnalysis }: PromptResultProps) {
             </div>
             <div>
               <span className="text-gray-500 dark:text-gray-400">FPS:</span>{" "}
-              <span className="font-mono ml-2">{result.source_metadata.fps.toFixed(1)}</span>
+              <span className="font-mono ml-2">
+                {result.source_metadata.fps > 0
+                  ? result.source_metadata.fps.toFixed(1)
+                  : "Imagen"}
+              </span>
             </div>
             <div>
               <span className="text-gray-500 dark:text-gray-400">Frames analizados:</span>{" "}
